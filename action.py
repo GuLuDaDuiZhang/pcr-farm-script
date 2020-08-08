@@ -4,6 +4,8 @@ import device
 from device import Device
 from parameters import LOADING_TIME, LOGIN_PARAMETERS, BOSS, IS_NEW_DEV_LOGIN, BACK_TO_JUNO
 
+fail = 'Fail'
+
 
 def _sleep(time: float = LOADING_TIME, is_open: bool = IS_NEW_DEV_LOGIN):
     if is_open:
@@ -13,13 +15,21 @@ def _sleep(time: float = LOADING_TIME, is_open: bool = IS_NEW_DEV_LOGIN):
 def login(dev: Device, account: list, login_parameters: int = LOGIN_PARAMETERS):
     dev.click(893, 37, click_round=4)  # 切换账号按钮浮动显示4s，识图的话会来不及，故使用绝对坐标定位。touch屏幕后,点击切换账号按钮
     if dev.cv_get_coordinate('et_id', fun_info='login') is None:
-        dev.click(535, 205)  # 点x 删除当前账号
+        dev.long_press(360, 205, duration=1500)
+        dev.key_event(device.KEYCODE_FORWARD_DEL)  # 长按删除账号
         dev.long_press(360, 250, duration=1500)
         dev.key_event(device.KEYCODE_FORWARD_DEL)  # 长按删除密码
     dev.click_and_input_byCv('et_id', account[0])
     dev.click_and_input_byCv('et_password', account[1])
     dev.click_byCv('btn_login')
+
     _sleep(is_open=True)  # 等待登录读条
+    if dev.cv_get_coordinate('iv_data_load', fun_info='login') is not None:
+        _sleep(is_open=True, time=10)
+    if dev.cv_get_coordinate('btn_register', fun_info='login') is not None:
+        dev.log.warning('登录失败login Fail 账号：%s' % account)
+        return fail
+
     if login_parameters == 0:
         dev.click_byCv('ib_skip', no_result_click_screen=True)  # 跳过每日盖章动画
     if login_parameters == 1:
@@ -57,7 +67,8 @@ def join_guild(dev: Device, guild_name: str):
 
 def join_guild_and_logout(dev: Device, account_list: list, guild_name: str):
     for account in account_list:
-        login(dev, account)
+        if login(dev, account) is fail:
+            continue
         join_guild(dev, guild_name)
         logout(dev)
 
@@ -65,7 +76,8 @@ def join_guild_and_logout(dev: Device, account_list: list, guild_name: str):
 def underground_city_battle_and_logout(dev: Device, account_list: list, is_complete_daily: bool,
                                        buy_energy_round: int):
     for account in account_list:
-        login(dev, account)
+        if login(dev, account) is fail:
+            continue
         if is_complete_daily:
             complete_daily(dev, buy_energy_round)
         dev.click_byCv('tb_adventure')
@@ -145,7 +157,8 @@ def adventure_1_1_hard(dev: Device):
 
 def adventure_1_1_leve_up(dev: Device, account_list: list, buy_energy_round: int):
     for account in account_list:
-        login(dev, account, login_parameters=0)
+        if login(dev, account) is fail:
+            continue
         round_chunks = math.ceil(buy_energy_round / 6)
         round_num = 6
 
@@ -167,7 +180,8 @@ def adventure_1_1_leve_up(dev: Device, account_list: list, buy_energy_round: int
 
 def adventure_1_1_hard_3_stars(dev: Device, account_list: list):
     for account in account_list:
-        login(dev, account)
+        if login(dev, account) is fail:
+            continue
         dev.click_byCv('iv_home_add_energy', 'btn_ok_blue', 'btn_ok_white')  # 买体力
         dev.click_byCv('tb_adventure')
         _sleep()
