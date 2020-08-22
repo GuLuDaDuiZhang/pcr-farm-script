@@ -1,7 +1,9 @@
 import os
+import sys
 from time import sleep
 from cv2tool import Cv2Tool
 from log import LogTool
+from ocrtool import OcrTool
 from parameters import CLICK_DELAY, IDENTIFY_ROUND, IS_NEW_DEV_LOGIN, ADB_PATH
 
 KEYCODE_FORWARD_DEL = 112
@@ -38,7 +40,7 @@ def start_priconne():
                       ' shell am start -n com.bilibili.priconne/com.bilibili.princonne.bili.MainActivity')
             priconne_starting = True
     if priconne_starting:
-        sleep(6)  # 等待公主连结应用启动完毕
+        sleep(4)  # 等待公主连结应用启动完毕
 
 
 class DeviceADB:
@@ -66,21 +68,34 @@ class Device(DeviceADB):
     def __init__(self, device_name: str, log):
         self.log = log
         self.cv = Cv2Tool(device_name)
+        self.ocr = OcrTool(device_name)
         self.device_name = device_name
+
+    def __str__(self):
+        return self.device_name
+
+    __repr__ = __str__
+
+    def reset_priconne(self):
+        os.system(ADB_PATH + 'adb -s ' + self.device_name +
+                  ' shell am start -S -n  com.bilibili.priconne/com.bilibili.princonne.bili.MainActivity')
+        self.log.warning(sys._getframe(1).f_code.co_name + ' reset priconne')
+        sleep(4)
 
     def click(self, x: float, y: float, click_round: int = 1, click_delay: float = CLICK_DELAY):
         for r in range(click_round):
             sleep(click_delay)
-            self.log.info('x=%s,y=%s,sleep=%s(s),round=%s' % (x, y, click_delay, r))
+            self.log.info('click x=%s,y=%s,sleep=%s(s),round=%s' % (x, y, click_delay, r))
             DeviceADB.click(self.device_name, x, y)
 
     def input(self, text: str):
-        self.log.info('text:%s' % text)
+        self.log.info('input text:%s' % text)
         DeviceADB.input(self.device_name, text)
 
     def swipe(self, start_x: float, start_y: float, end_x: float, end_y: float, duration: float):
         self.log.info(
-            'start_x=%s,start_y=%s,end_x=%s,end_y=%s,duration=%s(ms)' % (start_x, start_y, end_x, end_y, duration))
+            'swipe start_x=%s,start_y=%s,end_x=%s,end_y=%s,duration=%s(ms)' % (
+                start_x, start_y, end_x, end_y, duration))
         DeviceADB.swipe(self.device_name, start_x, start_y, end_x, end_y, duration)
 
     def key_event(self, keycode):
@@ -95,7 +110,9 @@ class Device(DeviceADB):
                    select_upper_left: bool = False):
         for img in image:
             for _ in range(identify_round):
-                coordinate = self.cv_get_coordinate(img, 'click_byCv', select_upper_left=select_upper_left)
+                coordinate = self.cv_get_coordinate(img, fun_info=sys._getframe(1).f_code.co_name + ' '
+                                                                  + sys._getframe(0).f_code.co_name,
+                                                    select_upper_left=select_upper_left)
                 if coordinate is not None:
                     self.click(coordinate[0], coordinate[1], click_round=click_round, click_delay=click_delay)
                     break
@@ -110,7 +127,9 @@ class Device(DeviceADB):
     def long_press_byCv(self, image: str, duration: float, identify_round: int = IDENTIFY_ROUND,
                         select_upper_left: bool = False):
         for _ in range(identify_round):
-            coordinate = self.cv_get_coordinate(image, 'long_press_byCv', select_upper_left=select_upper_left)
+            coordinate = self.cv_get_coordinate(image, fun_info=sys._getframe(1).f_code.co_name + ' '
+                                                                + sys._getframe(0).f_code.co_name,
+                                                select_upper_left=select_upper_left)
             if coordinate is not None:
                 self.long_press(coordinate[0], coordinate[1], duration)
                 break
@@ -121,11 +140,25 @@ class Device(DeviceADB):
         if is_open:
             self.click(1, 1, click_round=click_round, click_delay=click_delay)
 
-    def cv_get_coordinate(self, image: str, fun_info: str, select_upper_left: bool = False):
+    def cv_get_coordinate(self, image: str, fun_info: str = None, select_upper_left: bool = False):
+        if fun_info is None:
+            fun_info = sys._getframe(1).f_code.co_name + ' ' + sys._getframe(0).f_code.co_name
+
         result = self.cv.get_coordinate(image, select_upper_left)
-        coordinate = result.get('coordinate')
-        if coordinate is not None:
-            self.log.info(fun_info + str(result))
-            return coordinate
-        self.log.warning(fun_info + str(result))
+        if result['exists']:
+            self.log.info(fun_info + ' ' + str(result))
+            return result['coordinate']
+        self.log.warning(fun_info + ' ' + str(result))
         return None
+
+    def cv_exists(self, image: str):
+        fun_info = sys._getframe(1).f_code.co_name + ' ' + sys._getframe(0).f_code.co_name
+        result = self.cv.get_coordinate(image, select_upper_left=False)
+        self.log.info(fun_info + ' ' + str(result))
+        return result['exists']
+
+    def ocr_exists(self, word):
+        fun_info = sys._getframe(1).f_code.co_name + ' ' + sys._getframe(0).f_code.co_name
+        result = self.ocr.identify_word(word)
+        self.log.info(fun_info + ' ' + str(result))
+        return result['exists']

@@ -14,7 +14,7 @@ def _sleep(time: float = LOADING_TIME, is_open: bool = IS_NEW_DEV_LOGIN):
 
 def login(dev: Device, account: list, login_parameters: int = LOGIN_PARAMETERS):
     dev.click(893, 37, click_round=4)  # 切换账号按钮浮动显示4s，识图的话会来不及，故使用绝对坐标定位。touch屏幕后,点击切换账号按钮
-    if dev.cv_get_coordinate('et_id', fun_info='login') is None:
+    if not dev.cv_exists('et_id'):
         dev.long_press(360, 205, duration=1500)
         dev.key_event(device.KEYCODE_FORWARD_DEL)  # 长按删除账号
         dev.long_press(360, 250, duration=1500)
@@ -24,18 +24,37 @@ def login(dev: Device, account: list, login_parameters: int = LOGIN_PARAMETERS):
     dev.click_byCv('btn_login')
 
     _sleep(is_open=True)  # 等待登录读条
-    if dev.cv_get_coordinate('iv_data_load', fun_info='login') is not None:
-        _sleep(is_open=True, time=10)
-    if dev.cv_get_coordinate('btn_register', fun_info='login') is not None:
-        dev.log.warning('登录失败login Fail 账号：%s' % account)
+    while True:
+        if dev.cv_exists('iv_data_load'):
+            _sleep(is_open=True)
+        else:
+            break
+    if dev.cv_exists('btn_register'):
+        dev.log.warning('登录失败 账号：%s' % account[0])
         return fail
+
+    if dev.cv_exists('iv_data_download'):
+        dev.click_byCv('btn_ok_blue')
+        while True:
+            if not dev.ocr_exists('数据下载'):
+                break
+            _sleep(time=15, is_open=True)
 
     if login_parameters == 0:
         dev.click_byCv('ib_skip', no_result_click_screen=True)  # 跳过每日盖章动画
     if login_parameters == 1:
         dev.click_byCv('iv_four_red_flag', 'btn_game_start', 'ib_skip')
-        dev.click_screen_upper_left_corner(1, is_open=True)
-    dev.click_byCv('btn_close', no_result_click_screen=True)  # 退出通知弹窗
+
+    while True:
+        if not dev.cv_exists('tb_adventure'):
+            dev.click_screen_upper_left_corner(1, is_open=True)  # 退出通知弹窗
+            continue
+        _sleep(time=3, is_open=True)
+        if not dev.cv_exists('tb_main_menu'):
+            dev.click_screen_upper_left_corner(1, is_open=True)
+            continue
+        else:
+            break
 
 
 def logout(dev: Device):
@@ -79,16 +98,20 @@ def underground_city_battle_and_logout(dev: Device, account_list: list, is_compl
         if login(dev, account) is fail:
             continue
         if is_complete_daily:
-            complete_daily(dev, buy_energy_round)
+            complete_daily(dev, account, buy_energy_round)
         dev.click_byCv('tb_adventure')
         _sleep()  # 防止解锁团队战动画卡掉后续点击
         dev.click_byCv('iv_underground_city')
         _sleep()  # 等待解锁地下城
         dev.click_screen_upper_left_corner(6, click_delay=0.5)  # 跳过对话
-        dev.click_byCv('iv_cloudy_Mountains', 'btn_ok_blue')  # 进入地下城云海的山脉进入第一层
+        dev.click_byCv('iv_cloudy_Mountains')
+        _sleep(is_open=True)
+        if not dev.cv_exists('btn_ok_blue'):
+            logout(dev)
+            continue
+        dev.click_byCv('btn_ok_blue')
         _sleep(time=10)  # 第一次进地下城有过场动画
-        if IS_NEW_DEV_LOGIN and (dev.cv_get_coordinate('ib_menu',
-                                                       fun_info='underground_city_battle_and_logout') is not None):
+        if IS_NEW_DEV_LOGIN and (not dev.cv_exists('ib_menu')):
             dev.click_byCv('ib_menu', 'ib_menu_skip', 'btn_skip')
         dev.click_byCv('tv_first_floor', 'btn_challenge', 'btn_aid')
         select_role(dev, 'iv_aid')
@@ -199,7 +222,7 @@ def adventure_1_1_hard_3_stars(dev: Device, account_list: list):
         logout(dev)
 
 
-def complete_daily(dev: Device, buy_energy_round: int = 0):
+def complete_daily(dev: Device, account: list, buy_energy_round: int = 0):
     dev.click_byCv('tb_twisted_egg')
     if IS_NEW_DEV_LOGIN:
         dev.click_byCv('btn_set_blue')
@@ -218,12 +241,16 @@ def complete_daily(dev: Device, buy_energy_round: int = 0):
         dev.click_byCv('iv_home_add_energy', 'btn_ok_blue', 'btn_ok_white')
     dev.click_byCv('tb_adventure')
     _sleep()
+    if not dev.cv_exists('iv_main_adventure'):
+        dev.reset_priconne()
+        login(dev, account)
+        dev.click_byCv('tb_adventure')
     dev.click_byCv('iv_main_adventure')
     adventure_1_1_hard(dev)
     adventure_1_1(dev)
 
     dev.click_byCv('tb_home_page')
-    dev.click_byCv('iv_task_button', 'btn_all_charge', 'btn_close', 'tb_home_page')
+    dev.click_byCv('iv_task_button', 'btn_all_charge', 'btn_close')
     dev.click_screen_upper_left_corner(2, is_open=True)  # 跳过可能出现的升级窗口
-    dev.click_byCv('iv_gift_button', 'btn_all_charge', 'btn_ok_blue')
+    dev.click_byCv('tb_home_page', 'iv_gift_button', 'btn_all_charge', 'btn_ok_blue')
     dev.click_screen_upper_left_corner(3, is_open=True)  # 退出礼物小窗口

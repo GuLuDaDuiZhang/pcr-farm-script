@@ -1,4 +1,5 @@
 import math
+import sys
 import time
 import action
 import device
@@ -6,6 +7,7 @@ import task
 from log import LogTool
 import parameters
 from tkinter import messagebox, Tk
+import ocrtool
 
 
 def get_account(file: str) -> list:
@@ -15,7 +17,6 @@ def get_account(file: str) -> list:
 
 
 def hint():
-    device_quantity = len(device_list)
     account_quantity = len(account_list1)
     account_quantity2 = len(account_list2)
     main_log.info('大号：%s' % parameters.BOSS)
@@ -23,7 +24,7 @@ def hint():
     main_log.info('农场2会长：%s' % parameters.FARM_2_LEADER)
     main_log.info('农场1：%s' % parameters.FARM_1_NAME)
     main_log.info('农场2：%s' % parameters.FARM_2_NAME)
-    main_log.info('模拟器数量：%s' % device_quantity)
+    main_log.info('模拟器：数量%s  %s' % (len(device_list), str(device_list)))
     main_log.info('accountlist.txt内账号数量：%s' % account_quantity)
     main_log.info('accountlist2.txt内账号数量：%s' % account_quantity2)
     info = '大号：' + str(parameters.BOSS) + \
@@ -31,12 +32,11 @@ def hint():
            '\n农场2会长：' + str(parameters.FARM_2_LEADER) + \
            '\n农场1：' + parameters.FARM_1_NAME + \
            '\n农场2：' + parameters.FARM_2_NAME + \
-           '\n模拟器数量：' + str(device_quantity) + \
+           '\n模拟器：数量%s  %s' % (len(device_list), str(device_list)) + \
            '\naccountlist.txt内账号数量：' + str(account_quantity) + \
            '\naccountlist2.txt内账号数量：' + str(account_quantity2) + \
            '\nIS_NEW_DEV_LOGIN=' + str(parameters.IS_NEW_DEV_LOGIN) + \
            '\n请仔细确认！如果账号内容有改动要在parameters.py里进行相关配置'
-    Tk().withdraw()
     if not messagebox.askokcancel("运行前请仔细核对账号等信息！", info):
         exit()
 
@@ -53,7 +53,7 @@ def check_log(file: str = None, info: str = None):
     # 用来找出登录失败的账号
     result = ''
     if file is None:
-        file = log.filename
+        file = log_tool.filename
     else:
         file = 'log\\' + file
 
@@ -72,11 +72,14 @@ def check_log(file: str = None, info: str = None):
 
 if __name__ == '__main__':
     # -------------这些代码是脚本准备工作，不了解的情况下不要动---------------
-    start = time.time()
     device.connect_ADB()
-    log = LogTool()
-    main_log = log.get_logging('main_log')
-    device.init_device_list(log)
+    start = time.time()
+    Tk().withdraw()
+
+    log_tool = LogTool()
+    main_log = log_tool.get_logging('main_log')
+
+    device.init_device_list(log_tool)
     device_list = device.get_device_list()
     account_list1 = get_account('accountlist.txt')
     account_list2 = get_account('accountlist2.txt')
@@ -104,11 +107,13 @@ if __name__ == '__main__':
 
     # 下面这几条预留代码方便后续调试
     # d_l = device.get_device_list()
-    # d_l[0].click_byCv('btn_register')
+    # d_l[0].click_byCv('tb_adventure')
     # d_l[0].click(535,205)
-    # action
+    # action.login(d_l[0],[])
     # task
-    # check_log(file='2020-08-08_03-59-37.log')
+    # check_log(file='')
+    # result=d_l[0].ocr.identify_word('主菜单')
+    # print(result)
 
     # -------------这些代码是脚本收尾工作，不了解的情况下不要动---------------
     device.quit_ADB()

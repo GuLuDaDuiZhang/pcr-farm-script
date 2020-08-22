@@ -18,7 +18,7 @@ class LogTool:
         handler1.setLevel(logging.INFO)
         handler2.setLevel(logging.INFO)
 
-        formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s %(funcName)s >>%(message)s")
+        formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s >>%(message)s")
         handler1.setFormatter(formatter)
         handler2.setFormatter(formatter)
 
