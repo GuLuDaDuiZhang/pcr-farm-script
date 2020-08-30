@@ -1,4 +1,5 @@
 import os
+import random
 from time import sleep
 from tkinter import messagebox
 import requests
@@ -56,6 +57,10 @@ class OcrTool:
         words_location_list = list()
         exists = False
         target_coordinate = None
+        if response['error_code'] == 18:
+            sleep(random.uniform(1.5, 3))
+            return self.identify_word(target_word)
+
         for res in response['words_result']:
             word: str = res['words']
             location = res['location']
