@@ -99,20 +99,20 @@ if __name__ == '__main__':
     device.start_priconne()  # 启动公主连结
     # ----------------------------------------------------------------
 
-    # 创建农场行会
+    # -----------创建农场行会
     # account_list1 代表accountlist.txt里的账号数据，account_list2 代表accountlist2.txt里的账号数据
     # *账号文件里第一行账号做为会长，会名有注意事项请看parameters.py
-    # *账号已有行会
     # task.task_create_guild_and_join(device_list, account_list1, FARM_1_NAME)
     # task.task_create_guild_and_join(device_list, account_list2, FARM_2_NAME)
 
-    # 账号批量通关1-1困难
+    # -----------账号批量通关1-1困难
     # is_buy_energy=True会买一管体力防止体力不够
-    # *没做选人，打开编队默认配的是什么就用什么，等级太低可能会过不了
+    # *没做选人，打开编队默认配的是什么就用什么，干员等级太低可能会过不了
     # task.task_adventure_1_1_hard_3_stars(device_list, account_list1, is_buy_energy=True)
     # task.task_adventure_1_1_hard_3_stars(device_list, account_list2, is_buy_energy=True)
 
-    # 40对1刷玛娜，流程大号加入第一个农场上架支援，然后农场小号借支援轮巡完，踢出大号加第二个农场重复一遍
+    # -----------40对1
+    # 流程大号加入第一个农场上架支援，然后农场小号借支援轮巡完，踢出大号加第二个农场重复一遍
     # is_complete_dail完成每日任务，开启会增加1倍的耗时
     # buy_energy_round买体次数，数值不能超过8，平时建议3~6用追等级，开了完成每日任务此项才会买体
     # *每日任务刷1-1是用扫荡卷扫的，要求已经3星通关普通和困难1-1
@@ -120,17 +120,19 @@ if __name__ == '__main__':
     # *大号要求全角色战力是农场里最高的，切换农场会踢掉全角色战力最高的玩家
     # task.task_40_to_1(device_list, account_list1, account_list2, is_complete_daily=True, buy_energy_round=3)
 
-    # 单农场刷mana完成每日 *注意事项参考40对1
+    # -----------单农场刷mana完成每日
+    # *注意事项可参考40对1
     # task.task_mana_and_daily(device_list, account_list1, FARM_1_NAME, FARM_1_LEADER, is_complete_daily=False,
     #                          buy_energy_round=3)
     # task.task_mana_and_daily(device_list, account_list2, FARM_2_NAME, FARM_2_LEADER, is_complete_daily=False,
     #                          buy_energy_round=3)
 
-    # 用扫荡卷刷普通1-1，刷完体力，buy_energy_round买体次数不能超过30
+    # -----------扫荡普通1-1
+    # buy_energy_round买体次数不能超过30
     # task.task_adventure_1_1_leve_up(device_list, account_list1, buy_energy_round=10)
     # task.task_adventure_1_1_leve_up(device_list, account_list2, buy_energy_round=10)
 
-    # 刷每日
+    # -----------刷每日
     # buy_energy_round买体次数，数值不能超过8，建议3~6
     # *每日任务刷1-1是用扫荡卷扫的，要求已经3星通关普通和困难1-1
     # task.task_complete_daily(device_list, account_list1, buy_energy_round=6)
