@@ -2,7 +2,7 @@ import os
 import cv2
 import numpy as np
 from time import sleep
-from parameters import IDENTIFY_THRESHOLD, SCREENSHOT_DELAY, SCREEN_RESOLUTION, ADB_PATH
+from parameters import THRESHOLD, OPDELAY, ADB_PATH
 
 
 class Cv2Tool:
@@ -13,28 +13,27 @@ class Cv2Tool:
             os.mkdir('screenshot')
 
     def screenshot(self):
-        sleep(SCREENSHOT_DELAY)
+        sleep(OPDELAY)
         path = os.path.abspath('screenshot') + '\\' + self.screenshot_name
         os.system(ADB_PATH + 'adb -s ' + self.device_name + ' shell screencap /data/screen.png')
-        os.system(ADB_PATH + 'adb -s ' + self.device_name + ' pull /data/screen.png %s' % path)
+        os.system((ADB_PATH + 'adb -s ' + self.device_name + ' pull /data/screen.png %s' % path))
 
-    def get_img_size(self, img_path: str):
-        img = cv2.imread(img_path, 0)
-        screen = cv2.imread('screenshot/' + self.screenshot_name, 0)
-        height, width = img.shape[:2]
-        ratio = int(SCREEN_RESOLUTION) / screen.shape[1]
-        size = (int(width / ratio), int(height / ratio))
-        return cv2.resize(img, size, interpolation=cv2.INTER_AREA)
+    # def get_img_size(self, img_path: str):
+    #     img = cv2.imread(img_path, 0)
+    #     screen = cv2.imread('screenshot/' + self.screenshot_name, 0)
+    #     height, width = img.shape[:2]
+    #     ratio = int(SCREEN_RESOLUTION) / screen.shape[1]
+    #     size = (int(width / ratio), int(height / ratio))
+    #     return cv2.resize(img, size, interpolation=cv2.INTER_AREA)
 
     def get_coordinate(self, image: str, select_upper_left: bool) -> dict:
         self.screenshot()
-        image_path = 'images/' + SCREEN_RESOLUTION + '/' + image + '.png'
         screen = cv2.imread('screenshot/' + self.screenshot_name, 0)
-        template = self.get_img_size(image_path)
+        template = cv2.imread('images/' + image + '.png', 0)
         image_w, image_h = template.shape[::-1]
         data = cv2.matchTemplate(screen, template, cv2.TM_CCOEFF_NORMED)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(data)
-        if max_val < IDENTIFY_THRESHOLD:
+        if max_val < THRESHOLD:
             return {'exists': False,
                     'image': image,
                     'max_val': max_val,
@@ -48,7 +47,7 @@ class Cv2Tool:
                     'max_val': max_val,
                     'min_val': min_val}
         else:
-            result = [list(coordinate) for coordinate in zip(*np.where(data > IDENTIFY_THRESHOLD)[::-1])]
+            result = [list(coordinate) for coordinate in zip(*np.where(data > THRESHOLD)[::-1])]
             result_upper_left = min(result)
             coordinate = (result_upper_left[0] + image_w / 2, result_upper_left[1] + image_h / 2)
             return {'exists': True,

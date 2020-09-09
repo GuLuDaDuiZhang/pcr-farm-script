@@ -36,6 +36,15 @@ def task_40_to_1(device_list: list, account_list1: list, account_list2: list, is
     action.fire_role(device_list[0], FARM_2_LEADER)  # 踢掉大号
 
 
+def task_mana_and_daily(device_list: list, account_list: list, farm_name: str, farm_leader: list,
+                        is_complete_daily: bool, buy_energy_round: int):
+    # 40对1单农场版，运行逻辑是大号先加入农场上架支援，然后农场小号借支援轮巡完，踢出大号
+    action.boss_join_guild_and_set_aid(device_list[0], farm_name)  # 大号加入农场
+    thread_run_action(action.underground_city_battle_and_logout, device_list, account_list, is_complete_daily,
+                      buy_energy_round)
+    action.fire_role(device_list[0], farm_leader)  # 踢掉大号
+
+
 def task_create_guild_and_join(device_list: list, account_list: list, guild_name: str):
     # 账号数据中第一行的账号组建行会作为会长，然后其它账号加入
     leader = account_list.pop(0)
@@ -44,11 +53,15 @@ def task_create_guild_and_join(device_list: list, account_list: list, guild_name
     print('创建完毕，记得在parameters里填写农场会长的账号，默认会长是账号文件里的第一行账号')
 
 
-def task_adventure_1_1_hard_3_stars(device_list: list, account_list: list):
+def task_adventure_1_1_hard_3_stars(device_list: list, account_list: list, is_buy_energy: bool):
     # 用来通1-1的3星
-    thread_run_action(action.adventure_1_1_hard_3_stars, device_list, account_list)
+    thread_run_action(action.adventure_1_1_hard_3_stars, device_list, account_list, is_buy_energy)
 
 
 def task_adventure_1_1_leve_up(device_list: list, account_list: list, buy_energy_round: int):
     # 买体刷1-1，和40对1里的买体刷1-1不同之处在于这个是可以买8管以上的体力，用来紧急刷级
     thread_run_action(action.adventure_1_1_leve_up, device_list, account_list, buy_energy_round)
+
+
+def task_complete_daily(device_list: list, account_list: list, buy_energy_round: int):
+    thread_run_action(action.complete_daily_task, device_list, account_list, buy_energy_round)

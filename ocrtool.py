@@ -5,7 +5,7 @@ from tkinter import messagebox
 import requests
 import base64
 from requests.exceptions import ProxyError
-from parameters import BAIDU_API_KEY, BAIDU_SECRET_KEY, ADB_PATH, SCREENSHOT_DELAY
+from parameters import BAIDU_API_KEY, BAIDU_SECRET_KEY, ADB_PATH, OPDELAY
 
 
 class OcrTool:
@@ -37,14 +37,46 @@ class OcrTool:
             exit(1)
 
     def screenshot(self):
-        sleep(SCREENSHOT_DELAY)
+        sleep(OPDELAY)
         path = os.path.abspath('screenshot') + '\\' + self.screenshot_name
         os.system(ADB_PATH + 'adb -s ' + self.device_name + ' shell screencap /data/screen.png')
         os.system(ADB_PATH + 'adb -s ' + self.device_name + ' pull /data/screen.png %s' % path)
 
-    def identify_word(self, target_word: str):
+    def word_exists_accurate(self, target_word, is_full_matching: bool):
         self.screenshot()
-        request_url = "https://aip.baidubce.com/rest/2.0/ocr/v1/general"
+        request_url = "https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic"
+        img = base64.b64encode(open('screenshot/' + self.screenshot_name, 'rb').read())
+
+        params = {"image": img}
+        access_token = self.token
+        request_url = request_url + "?access_token=" + access_token
+        headers = {'content-type': 'application/x-www-form-urlencoded'}
+        response = requests.post(request_url, data=params, headers=headers).json()
+        print(response)
+
+        words_list = list()
+        exists = False
+        if response.get('error_code') == 18:
+            sleep(random.uniform(1.5, 3))
+            return self.word_exists_accurate(target_word, is_full_matching)
+
+        for res in response['words_result']:
+            word: str = res['words']
+            word_index = word.find(target_word)
+            if (not exists) and word.find(target_word) != -1:
+                if is_full_matching:
+                    if word_index == 0:
+                        exists = True
+                else:
+                    exists = True
+        return {'exists': exists, 'words': words_list}
+
+    def word_matching(self, target_word: str, is_full_matching: bool, is_accurate: bool = False):
+        self.screenshot()
+        if is_accurate:
+            request_url = 'https://aip.baidubce.com/rest/2.0/ocr/v1/accurate'
+        else:
+            request_url = "https://aip.baidubce.com/rest/2.0/ocr/v1/general"
         img = base64.b64encode(open('screenshot/' + self.screenshot_name, 'rb').read())
 
         params = {"image": img}
@@ -57,23 +89,29 @@ class OcrTool:
         words_location_list = list()
         exists = False
         target_coordinate = None
-        if response['error_code'] == 18:
+        if response.get('error_code') == 18:
             sleep(random.uniform(1.5, 3))
-            return self.identify_word(target_word)
+            return self.word_matching(target_word, is_full_matching, is_accurate)
 
         for res in response['words_result']:
             word: str = res['words']
             location = res['location']
             coordinate = [location['left'] + location['width'] / 2, location['top'] + location['height'] / 2]
 
-            if exists is False and word.find(target_word) != -1:
-                exists = True
-                target_coordinate = coordinate
+            word_index = word.find(target_word)
+            if (not exists) and word_index != -1:
+                if is_full_matching:
+                    if word_index == 0:
+                        exists = True
+                        target_coordinate = coordinate
+                else:
+                    exists = True
+                    target_coordinate = coordinate
 
             words_list.append(word)
             words_location_list.append(coordinate)
 
         return {'exists': exists,
-                'coordinate': target_coordinate,
+                'coordinate': target_coordinate,  # 匹配到多个目标取最靠左上位置的目标坐标
                 'words': words_list,
                 'words_location': words_location_list}

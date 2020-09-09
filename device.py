@@ -4,7 +4,7 @@ from time import sleep
 from cv2tool import Cv2Tool
 from log import LogTool
 from ocrtool import OcrTool
-from parameters import CLICK_DELAY, IDENTIFY_ROUND, IS_NEW_DEV_LOGIN, ADB_PATH
+from parameters import OPDELAY, IDENTIFY_ROUND, IS_NEW_DEV_LOGIN, ADB_PATH
 
 KEYCODE_FORWARD_DEL = 112
 device_list = []
@@ -77,12 +77,13 @@ class Device(DeviceADB):
     __repr__ = __str__
 
     def reset_priconne(self):
+        sleep(2)
         os.system(ADB_PATH + 'adb -s ' + self.device_name +
                   ' shell am start -S -n  com.bilibili.priconne/com.bilibili.princonne.bili.MainActivity')
         self.log.warning(sys._getframe(1).f_code.co_name + ' reset priconne')
-        sleep(4)
+        sleep(6)
 
-    def click(self, x: float, y: float, click_round: int = 1, click_delay: float = CLICK_DELAY):
+    def click(self, x: float, y: float, click_round: int = 1, click_delay: float = OPDELAY):
         for r in range(click_round):
             sleep(click_delay)
             self.log.info('click x=%s,y=%s,sleep=%s(s),round=%s' % (x, y, click_delay, r))
@@ -106,7 +107,7 @@ class Device(DeviceADB):
         DeviceADB.swipe(self.device_name, x, y, x, y, duration)
 
     def click_byCv(self, *image: str, identify_round: int = IDENTIFY_ROUND, click_round: int = 1,
-                   click_delay: float = CLICK_DELAY, no_result_click_screen: bool = False,
+                   click_delay: float = OPDELAY, no_result_click_screen: bool = False,
                    select_upper_left: bool = False):
         for img in image:
             for _ in range(identify_round):
@@ -134,7 +135,7 @@ class Device(DeviceADB):
                 self.long_press(coordinate[0], coordinate[1], duration)
                 break
 
-    def click_screen_upper_left_corner(self, click_round: int, click_delay: float = CLICK_DELAY,
+    def click_screen_upper_left_corner(self, click_round: int, click_delay: float = OPDELAY,
                                        is_open: bool = IS_NEW_DEV_LOGIN):
         # 点击左上角位置，用来跳过对话和动画页面
         if is_open:
@@ -151,14 +152,33 @@ class Device(DeviceADB):
         self.log.warning(fun_info + ' ' + str(result))
         return None
 
+    def click_byOcr(self, *words: str, identify_round: int = IDENTIFY_ROUND, click_round: int = 1,
+                    click_delay: float = OPDELAY, no_result_click_screen: bool = False,
+                    is_full_matching: bool = False, is_accurate: bool = False):
+        for word in words:
+            fun_info = sys._getframe(1).f_code.co_name + ' ' + sys._getframe(0).f_code.co_name
+            for _ in range(identify_round):
+                result = self.ocr.word_matching(word, is_full_matching=is_full_matching, is_accurate=is_accurate)
+                coordinate = result.get('coordinate')
+                self.log.info(fun_info + ' ' + str(result))
+                if coordinate is not None:
+                    self.click(coordinate[0], coordinate[1], click_round=click_round, click_delay=click_delay)
+                    break
+                if no_result_click_screen:
+                    # 没匹配到素材坐标的情况，会点击一下左上角，按需使用
+                    self.click_screen_upper_left_corner(1, is_open=True, click_delay=0.5)
+
     def cv_exists(self, image: str):
         fun_info = sys._getframe(1).f_code.co_name + ' ' + sys._getframe(0).f_code.co_name
         result = self.cv.get_coordinate(image, select_upper_left=False)
         self.log.info(fun_info + ' ' + str(result))
         return result['exists']
 
-    def ocr_exists(self, word):
+    def ocr_exists(self, word, is_full_matching: bool = False, is_accurate: bool = False):
         fun_info = sys._getframe(1).f_code.co_name + ' ' + sys._getframe(0).f_code.co_name
-        result = self.ocr.identify_word(word)
+        if is_accurate:
+            result = self.ocr.word_exists_accurate(word, is_full_matching)
+        else:
+            result = self.ocr.word_matching(word, is_full_matching)
         self.log.info(fun_info + ' ' + str(result))
         return result['exists']

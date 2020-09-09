@@ -5,13 +5,13 @@ import action
 import device
 import task
 from log import LogTool
-import parameters
+from parameters import BOSS, FARM_1_LEADER, FARM_2_LEADER, FARM_1_NAME, FARM_2_NAME, IS_NEW_DEV_LOGIN, LOGIN_PARAMETERS
 from tkinter import messagebox, Tk
 import ocrtool
 
 
 def get_account(file: str) -> list:
-    with open(file, 'r') as f:  # "r"方式读时，文件中的'\r\n'会被系统替换为'\n'
+    with open(file, 'r') as f:
         account_list = f.readlines()
     return [[str.strip(account.split(' ')[0]), str.strip(account.split(' ')[1])] for account in account_list]
 
@@ -19,28 +19,39 @@ def get_account(file: str) -> list:
 def hint():
     account_quantity = len(account_list1)
     account_quantity2 = len(account_list2)
-    main_log.info('大号：%s' % parameters.BOSS)
-    main_log.info('农场1会长：%s' % parameters.FARM_1_LEADER)
-    main_log.info('农场2会长：%s' % parameters.FARM_2_LEADER)
-    main_log.info('农场1：%s' % parameters.FARM_1_NAME)
-    main_log.info('农场2：%s' % parameters.FARM_2_NAME)
-    main_log.info('模拟器：数量%s  %s' % (len(device_list), str(device_list)))
-    main_log.info('accountlist.txt内账号数量：%s' % account_quantity)
-    main_log.info('accountlist2.txt内账号数量：%s' % account_quantity2)
-    info = '大号：' + str(parameters.BOSS) + \
-           '\n农场1会长：' + str(parameters.FARM_1_LEADER) + \
-           '\n农场2会长：' + str(parameters.FARM_2_LEADER) + \
-           '\n农场1：' + parameters.FARM_1_NAME + \
-           '\n农场2：' + parameters.FARM_2_NAME + \
-           '\n模拟器：数量%s  %s' % (len(device_list), str(device_list)) + \
-           '\naccountlist.txt内账号数量：' + str(account_quantity) + \
-           '\naccountlist2.txt内账号数量：' + str(account_quantity2) + \
-           '\nIS_NEW_DEV_LOGIN=' + str(parameters.IS_NEW_DEV_LOGIN) + \
-           '\n请仔细确认！如果账号内容有改动要在parameters.py里进行相关配置'
-    if not messagebox.askokcancel("运行前请仔细核对账号等信息！", info):
+    init_info = '\n===============init_info===============' \
+                '\n模拟器：数量%s  %s' % (len(device_list), str(device_list)) + \
+                '\nIS_NEW_DEV_LOGIN=' + str(IS_NEW_DEV_LOGIN) + \
+                '\nLOGIN_PARAMETERS=' + str(LOGIN_PARAMETERS) + \
+                '\n大号：' + str(BOSS) + \
+                '\n农场1会长：' + str(FARM_1_LEADER) + \
+                '\n农场2会长：' + str(FARM_2_LEADER) + \
+                '\n农场1：' + FARM_1_NAME + \
+                '\n农场2：' + FARM_2_NAME + \
+                '\naccountlist.txt内账号数量：' + str(account_quantity) + \
+                '\naccountlist2.txt内账号数量：' + str(account_quantity2) + \
+                '\n======================================='
+    main_log.info(init_info)
+
+    if len(device_list) == 0:
+        messagebox.showinfo('错误', '模拟器数量为 0\n\n请重试')
         exit()
 
-    # check_time = 8  # 任务执行前等待一段时间以便检查账号等数据是否符合预期
+    if not messagebox.askokcancel("运行前检查", init_info + '\n如果有不符预期的内容请点[取消]终止运行，检查后重新运行'
+                                                       '\n除了调试外，模拟器建议3个起步'):
+        exit()
+
+    if not messagebox.askokcancel("请注意",
+                                  '*大号战力最高的干员的等级不能高出小号骑士君等级30以上（例如102级的干员，小号起码要72级才能借）'
+                                  '\n\n*大号要处于未加入行会的状态'
+                                  '\n\n*每日任务刷图用扫荡卷扫，要求已3星通关1-1普通和困难'
+                                  '\n\n*农场小号不要上架支援，以免影响大号未上架支援的判断'
+                                  '\n\n*大号的全角色战力要是农场里最高的，切换农场默认踢掉全角色战力最高的玩家'
+                                  '\n\n*大号战力最高的干员战力最好超过1万，防止地下城开头被秒导致流程卡死，而且mana收益=战力x5'
+                                  '\n\n...'):
+        exit()
+
+    # check_time = 8
     # for i in range(0, check_time + 1):
     #     if i != check_time:
     #         print('\r脚本运行前倒计时:' + str(check_time - i), end=' ')
@@ -50,7 +61,7 @@ def hint():
 
 
 def check_log(file: str = None, info: str = None):
-    # 用来找出登录失败的账号
+    # 用来找出刷mana任务中被标记登录失败的农场号、以及创建行会任务中没有成功加入行会的
     result = ''
     if file is None:
         file = log_tool.filename
@@ -60,7 +71,7 @@ def check_log(file: str = None, info: str = None):
     with open(file, 'r', encoding='utf-8') as f:
         lines = f.readlines()
     for line in lines:
-        if line.find('登录失败') != -1:
+        if line.find('错误[000]') != -1:
             print(line, end='')
             result += line
 
@@ -88,28 +99,54 @@ if __name__ == '__main__':
     device.start_priconne()  # 启动公主连结
     # ----------------------------------------------------------------
 
-    # 下面两条用于创建农场行会
+    # 创建农场行会
+    # account_list1 代表accountlist.txt里的账号数据，account_list2 代表accountlist2.txt里的账号数据
+    # *账号文件里第一行账号做为会长，会名有注意事项请看parameters.py
+    # *账号已有行会
     # task.task_create_guild_and_join(device_list, account_list1, FARM_1_NAME)
     # task.task_create_guild_and_join(device_list, account_list2, FARM_2_NAME)
 
-    # 下面两条用于通关1-1困难，使用时会买一管体力
-    # task.task_adventure_1_1_hard_3_stars(device_list, account_list1)
-    # task.task_adventure_1_1_hard_3_stars(device_list, account_list2)
+    # 账号批量通关1-1困难
+    # is_buy_energy=True会买一管体力防止体力不够
+    # *没做选人，打开编队默认配的是什么就用什么，等级太低可能会过不了
+    # task.task_adventure_1_1_hard_3_stars(device_list, account_list1, is_buy_energy=True)
+    # task.task_adventure_1_1_hard_3_stars(device_list, account_list2, is_buy_energy=True)
 
-    # 40对1刷玛娜
-    # is_complete_daily可选是否完成每日任务，开启耗时会很久，建议先False，刷玛娜稳定且3星通关困难1-1后才考虑=True
-    # buy_energy_round买体次数，数值不要超过8，平时建议6就够了，开了完成每日任务才会生效
-    # task.task_40_to_1(device_list, account_list1, account_list2, is_complete_daily=False, buy_energy_round=6)
+    # 40对1刷玛娜，流程大号加入第一个农场上架支援，然后农场小号借支援轮巡完，踢出大号加第二个农场重复一遍
+    # is_complete_dail完成每日任务，开启会增加1倍的耗时
+    # buy_energy_round买体次数，数值不能超过8，平时建议3~6用追等级，开了完成每日任务此项才会买体
+    # *每日任务刷1-1是用扫荡卷扫的，要求已经3星通关普通和困难1-1
+    # *农场行会内小号不要去上架支援，以免影响脚本对空支援的判断
+    # *大号要求全角色战力是农场里最高的，切换农场会踢掉全角色战力最高的玩家
+    # task.task_40_to_1(device_list, account_list1, account_list2, is_complete_daily=True, buy_energy_round=3)
 
-    # 刷1-1，不同之处在于这个是可以买8管以上的体力，用来紧急提升等级
-    # task.task_adventure_1_1_leve_up(device_list, account_list1, buy_energy_round=8)
-    # task.task_adventure_1_1_leve_up(device_list, account_list2, buy_energy_round=8)
+    # 单农场刷mana完成每日 *注意事项参考40对1
+    # task.task_mana_and_daily(device_list, account_list1, FARM_1_NAME, FARM_1_LEADER, is_complete_daily=False,
+    #                          buy_energy_round=3)
+    # task.task_mana_and_daily(device_list, account_list2, FARM_2_NAME, FARM_2_LEADER, is_complete_daily=False,
+    #                          buy_energy_round=3)
 
-    # 下面这几条预留代码方便后续调试
+    # 用扫荡卷刷普通1-1，刷完体力，buy_energy_round买体次数不能超过30
+    # task.task_adventure_1_1_leve_up(device_list, account_list1, buy_energy_round=10)
+    # task.task_adventure_1_1_leve_up(device_list, account_list2, buy_energy_round=10)
+
+    # 刷每日
+    # buy_energy_round买体次数，数值不能超过8，建议3~6
+    # *每日任务刷1-1是用扫荡卷扫的，要求已经3星通关普通和困难1-1
+    # task.task_complete_daily(device_list, account_list1, buy_energy_round=6)
+    # task.task_complete_daily(device_list, account_list2, buy_energy_round=6)
+
+    # 调试
     # d_l = device.get_device_list()
-    # d_l[0].click_byCv('tb_adventure')
-    # d_l[0].click(535,205)
-    # action.login(d_l[0],[])
+    # d_l[1].click_byCv('btn_aid_on')
+    # d_l[0].click_and_input_byCv('et_guild', '233')
+    # print(d_l[0].ocr_exists('朱诺'))
+    # while True:
+    #     if messagebox.askokcancel("截图", '点确定截一张图'):
+    #         d_l[0].cv.screenshot()
+    #     else:
+    #         break
+    # action.login(d_l[0], [])
     # task
     # check_log(file='')
     # result=d_l[0].ocr.identify_word('主菜单')
