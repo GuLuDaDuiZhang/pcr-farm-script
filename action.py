@@ -183,6 +183,7 @@ def boss_join_guild_and_set_aid(dev: Device, guild_name: str, boss: list = BOSS)
     login(dev, boss)
     if join_guild(dev, guild_name) is fail:
         dev.log.warning('大号已加入行会')
+        exit()
         return fail
     dev.click_byCv('btn_aid_set')
     dev.click_byCv('iv_add_aid_city', select_upper_left=True)

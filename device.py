@@ -33,14 +33,9 @@ def get_device_list():
 
 
 def start_priconne():
-    priconne_starting = False
     for dev in device_list:
-        if os.system(ADB_PATH + 'adb -s ' + dev.device_name + ' shell pidof com.bilibili.priconne') == 1:
-            os.system(ADB_PATH + 'adb -s ' + dev.device_name +
-                      ' shell am start -n com.bilibili.priconne/com.bilibili.princonne.bili.MainActivity')
-            priconne_starting = True
-    if priconne_starting:
-        sleep(4)  # 等待公主连结应用启动完毕
+        dev.reset_priconne(start_delay=0, end_sleep=0)
+    sleep(4)
 
 
 class DeviceADB:
@@ -76,12 +71,12 @@ class Device(DeviceADB):
 
     __repr__ = __str__
 
-    def reset_priconne(self):
-        sleep(2)
+    def reset_priconne(self, start_delay: float = 2, end_sleep: float = 6):
+        sleep(start_delay)
         os.system(ADB_PATH + 'adb -s ' + self.device_name +
                   ' shell am start -S -n  com.bilibili.priconne/com.bilibili.princonne.bili.MainActivity')
         self.log.warning(sys._getframe(1).f_code.co_name + ' reset priconne')
-        sleep(6)
+        sleep(end_sleep)
 
     def click(self, x: float, y: float, click_round: int = 1, click_delay: float = OPDELAY):
         for r in range(click_round):
