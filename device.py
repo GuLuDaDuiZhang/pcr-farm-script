@@ -144,6 +144,20 @@ class Device(DeviceADB):
         if result['exists']:
             self.log.info(fun_info + ' ' + str(result))
             return result['coordinate']
+
+        while True:
+            is_connecting = self.ocr.word_exists('CONNECTING', is_full_matching=False)
+            self.log.info(fun_info + ' ' + str(is_connecting))
+            if is_connecting['exists']:
+                sleep(OPDELAY)
+                self.log.info(fun_info + ' game CONNECTING... ')
+            else:
+                break
+
+        is_game_error = self.ocr.word_exists('错误提示', is_full_matching=True, re_screenshot=False)
+        if is_game_error['exists']:
+            raise GameError()
+
         self.log.warning(fun_info + ' ' + str(result))
         return None
 
@@ -166,14 +180,31 @@ class Device(DeviceADB):
     def cv_exists(self, image: str):
         fun_info = sys._getframe(1).f_code.co_name + ' ' + sys._getframe(0).f_code.co_name
         result = self.cv.get_coordinate(image, select_upper_left=False)
+
+        if not result['exists']:
+            is_connecting = self.ocr.word_exists('CONNECTING', is_full_matching=False)
+            self.log.info(fun_info + ' ' + str(is_connecting))
+            if is_connecting['exists']:
+                sleep(OPDELAY)
+                self.log.info(fun_info + ' game CONNECTING... ')
+                return self.cv_exists(image)
+
+        is_game_error = self.ocr.word_exists('错误提示', is_full_matching=True, re_screenshot=False)
+        if is_game_error['exists']:
+            raise GameError()
+
         self.log.info(fun_info + ' ' + str(result))
         return result['exists']
 
     def ocr_exists(self, word, is_full_matching: bool = False, is_accurate: bool = False):
         fun_info = sys._getframe(1).f_code.co_name + ' ' + sys._getframe(0).f_code.co_name
-        if is_accurate:
-            result = self.ocr.word_exists_accurate(word, is_full_matching)
-        else:
-            result = self.ocr.word_matching(word, is_full_matching)
+        result = self.ocr.word_exists(word, is_full_matching, is_accurate=is_accurate)
         self.log.info(fun_info + ' ' + str(result))
         return result['exists']
+
+
+class GameError(Exception):
+    def __str__(self):
+        return 'GameError,游戏异常'
+
+    __repr__ = __str__

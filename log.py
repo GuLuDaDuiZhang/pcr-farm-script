@@ -2,6 +2,8 @@ import logging
 import os
 from datetime import datetime
 
+from parameters import LOGGER_ENABLE
+
 
 class LogTool:
     def __init__(self):
@@ -24,4 +26,7 @@ class LogTool:
 
         logger.addHandler(handler1)
         logger.addHandler(handler2)
+
+        if not LOGGER_ENABLE:
+            logger.disabled = True
         return logger

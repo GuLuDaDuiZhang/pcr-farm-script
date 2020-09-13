@@ -42,23 +42,26 @@ class OcrTool:
         os.system(ADB_PATH + 'adb -s ' + self.device_name + ' shell screencap /data/screen.png')
         os.system(ADB_PATH + 'adb -s ' + self.device_name + ' pull /data/screen.png %s' % path)
 
-    def word_exists_accurate(self, target_word, is_full_matching: bool):
-        self.screenshot()
-        request_url = "https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic"
+    def word_exists(self, target_word, is_full_matching: bool, is_accurate: bool = False,
+                    re_screenshot: bool = True):
+        if re_screenshot:
+            self.screenshot()
+        if is_accurate:
+            request_url = "https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic"
+        else:
+            request_url = 'https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic'
         img = base64.b64encode(open('screenshot/' + self.screenshot_name, 'rb').read())
 
         params = {"image": img}
-        access_token = self.token
-        request_url = request_url + "?access_token=" + access_token
+        request_url = request_url + "?access_token=" + self.token
         headers = {'content-type': 'application/x-www-form-urlencoded'}
         response = requests.post(request_url, data=params, headers=headers).json()
-        print(response)
 
         words_list = list()
         exists = False
         if response.get('error_code') == 18:
             sleep(random.uniform(1.5, 3))
-            return self.word_exists_accurate(target_word, is_full_matching)
+            return self.word_exists(target_word, is_full_matching)
 
         for res in response['words_result']:
             word: str = res['words']
@@ -69,10 +72,13 @@ class OcrTool:
                         exists = True
                 else:
                     exists = True
+            words_list.append(word)
         return {'exists': exists, 'words': words_list}
 
-    def word_matching(self, target_word: str, is_full_matching: bool, is_accurate: bool = False):
-        self.screenshot()
+    def word_matching(self, target_word: str, is_full_matching: bool, is_accurate: bool = False,
+                      re_screenshot: bool = True):
+        if re_screenshot:
+            self.screenshot()
         if is_accurate:
             request_url = 'https://aip.baidubce.com/rest/2.0/ocr/v1/accurate'
         else:
@@ -80,8 +86,7 @@ class OcrTool:
         img = base64.b64encode(open('screenshot/' + self.screenshot_name, 'rb').read())
 
         params = {"image": img}
-        access_token = self.token
-        request_url = request_url + "?access_token=" + access_token
+        request_url = request_url + "?access_token=" + self.token
         headers = {'content-type': 'application/x-www-form-urlencoded'}
         response = requests.post(request_url, data=params, headers=headers).json()
 
