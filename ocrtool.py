@@ -59,7 +59,7 @@ class OcrTool:
 
         words_list = list()
         exists = False
-        if response.get('error_code') == 18:
+        if response.get('error_code') is not None:
             sleep(random.uniform(1.5, 3))
             return self.word_exists(target_word, is_full_matching)
 
@@ -94,7 +94,7 @@ class OcrTool:
         words_location_list = list()
         exists = False
         target_coordinate = None
-        if response.get('error_code') == 18:
+        if response.get('error_code') is not None:
             sleep(random.uniform(1.5, 3))
             return self.word_matching(target_word, is_full_matching, is_accurate)
 

@@ -261,7 +261,9 @@ def fire_role(dev: Device, leader: list):
         login(dev, leader)
         dev.click_byCv('iv_guild_button')
         _sleep()  # 防止解锁团队战动画卡掉后续点击
-        dev.click_byCv('btn_member_info')
+        dev.click_byCv('btn_member_info', click_round=3)
+        if not dev.cv_exists('btn_member_manage'):
+            dev.click_byCv('btn_member_info')
         if not dev.cv_exists('btn_guild_combat_power'):
             dev.click_byCv('btn_guild_classify_setting', 'tv_all_combat_power', 'btn_ok_blue')
         dev.click_byCv('btn_guild_ascending', identify_round=1)  # 如果排序是升序，点一下让它变成降序
