@@ -1,5 +1,6 @@
 import os
 import random
+from json.decoder import JSONDecodeError
 from time import sleep
 from tkinter import messagebox
 import requests
@@ -55,15 +56,19 @@ class OcrTool:
         params = {"image": img}
         request_url = request_url + "?access_token=" + self.token
         headers = {'content-type': 'application/x-www-form-urlencoded'}
-        response = requests.post(request_url, data=params, headers=headers).json()
+        try:
+            response = requests.post(request_url, data=params, headers=headers)
+            response_json = response.json()
+        except JSONDecodeError as e:
+            return self.word_exists(target_word, is_full_matching, is_accurate, re_screenshot)
 
         words_list = list()
         exists = False
-        if response.get('error_code') is not None:
+        if response_json.get('error_code') is not None:
             sleep(random.uniform(1.5, 3))
             return self.word_exists(target_word, is_full_matching)
 
-        for res in response['words_result']:
+        for res in response_json['words_result']:
             word: str = res['words']
             word_index = word.find(target_word)
             if (not exists) and word.find(target_word) != -1:
@@ -88,17 +93,21 @@ class OcrTool:
         params = {"image": img}
         request_url = request_url + "?access_token=" + self.token
         headers = {'content-type': 'application/x-www-form-urlencoded'}
-        response = requests.post(request_url, data=params, headers=headers).json()
+        try:
+            response = requests.post(request_url, data=params, headers=headers)
+            response_json = response.json()
+        except JSONDecodeError as e:
+            return self.word_exists(target_word, is_full_matching, is_accurate, re_screenshot)
 
         words_list = list()
         words_location_list = list()
         exists = False
         target_coordinate = None
-        if response.get('error_code') is not None:
+        if response_json.get('error_code') is not None:
             sleep(random.uniform(1.5, 3))
             return self.word_matching(target_word, is_full_matching, is_accurate)
 
-        for res in response['words_result']:
+        for res in response_json['words_result']:
             word: str = res['words']
             location = res['location']
             coordinate = [location['left'] + location['width'] / 2, location['top'] + location['height'] / 2]

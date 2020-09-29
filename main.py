@@ -45,7 +45,7 @@ def hint():
                                   '*大号战力最高的干员的等级不能高出小号骑士君等级30以上（例如102级的干员，小号起码要72级才能借）'
                                   '\n\n*大号要处于未加入行会的状态'
                                   '\n\n*每日任务刷图用扫荡卷扫，要求已3星通关1-1普通和困难'
-                                  '\n\n*农场小号不要上架支援，以免影响大号未上架支援的判断'
+                                  '\n\n*农场小号不要上架支援'
                                   '\n\n*大号的全角色战力要是农场里最高的，切换农场默认踢掉全角色战力最高的玩家'
                                   '\n\n*大号战力最高的干员战力最好超过1万，防止地下城开头被秒导致流程卡死，而且mana收益=战力x5'
                                   '\n\n...'):
@@ -113,7 +113,7 @@ if __name__ == '__main__':
 
     # -----------40对1
     # 流程大号加入第一个农场上架支援，然后农场小号借支援轮巡完，踢出大号加第二个农场重复一遍
-    # is_complete_dail完成每日任务，开启会增加1倍的耗时
+    # is_complete_dail完成每日任务用于升级，开启会增加约1倍的耗时
     # buy_energy_round买体次数，数值不能超过8，平时建议3~6用追等级，开了完成每日任务此项才会买体
     # *每日任务刷1-1是用扫荡卷扫的，要求已经3星通关普通和困难1-1
     # *农场行会内小号不要去上架支援，以免影响脚本对空支援的判断
@@ -121,10 +121,10 @@ if __name__ == '__main__':
     # task.task_40_to_1(device_list, account_list1, account_list2, is_complete_daily=True, buy_energy_round=3)
 
     # -----------单农场刷mana完成每日
-    # *注意事项可参考40对1
+    # 流程大号加入第一个农场上架支援，然后农场小号借支援轮巡完，踢出大号
+    # *注意事项参考40对1
+    # *默认刷农场1，要刷农场2把函数参数account_list1, FARM_1_NAME, FARM_1_LEADER的1改成2
     # task.task_mana_and_daily(device_list, account_list1, FARM_1_NAME, FARM_1_LEADER, is_complete_daily=False,
-    #                          buy_energy_round=3)
-    # task.task_mana_and_daily(device_list, account_list2, FARM_2_NAME, FARM_2_LEADER, is_complete_daily=False,
     #                          buy_energy_round=3)
 
     # -----------扫荡普通1-1

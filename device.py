@@ -146,7 +146,7 @@ class Device(DeviceADB):
             return result['coordinate']
 
         while True:
-            is_connecting = self.ocr.word_exists('CONNECTING', is_full_matching=False, re_screenshot=False)
+            is_connecting = self.ocr.word_exists('CONNECTING', is_full_matching=False)
             self.log.info(fun_info + ' ' + str(is_connecting))
             if is_connecting['exists']:
                 sleep(OPDELAY)
@@ -182,7 +182,7 @@ class Device(DeviceADB):
         result = self.cv.get_coordinate(image, select_upper_left=False)
 
         if not result['exists']:
-            is_connecting = self.ocr.word_exists('CONNECTING', is_full_matching=False, re_screenshot=False)
+            is_connecting = self.ocr.word_exists('CONNECTING', is_full_matching=False)
             self.log.info(fun_info + ' ' + str(is_connecting))
             if is_connecting['exists']:
                 sleep(OPDELAY)

@@ -13,6 +13,7 @@ def login(dev: Device, account: list, login_parameters: int = LOGIN_PARAMETERS):
         dev.click(893, 37, click_round=10, click_delay=1)
         if not dev.cv_exists('btn_register'):
             logout(dev)
+            _sleep(10)
             return login(dev, account, login_parameters)
 
         if not dev.cv_exists('et_id'):
@@ -33,6 +34,17 @@ def login(dev: Device, account: list, login_parameters: int = LOGIN_PARAMETERS):
         if dev.cv_exists('btn_register'):
             dev.log.warning('错误[000]登录失败 账号：%s' % account[0])
             return fail
+
+        if IS_NEW_DEV_LOGIN and dev.cv_exists('tv_privacy_policy'):
+            dev.swipe(703, 200, 703, 400, 1000)
+            dev.click_byCv('btn_privacy_policy')
+            _sleep()
+            dev.swipe(703, 200, 703, 400, 1000)
+            dev.click_byCv('btn_privacy_policy')
+            while dev.cv_exists('tv_privacy_policy'):
+                dev.swipe(703, 200, 703, 400, 1000)
+                dev.click_byCv('btn_privacy_policy')
+                _sleep()
 
         if dev.cv_exists('iv_data_download'):
             dev.click_byCv('btn_ok_blue')
@@ -100,12 +112,14 @@ def underground_city_battle_and_logout(dev: Device, account: list, is_complete_d
             dev.click_byCv('ib_menu', 'ib_menu_skip', 'btn_skip')
         dev.click_byCv('tv_first_floor', 'btn_underground_city_challenge', 'btn_aid')
         if not dev.cv_exists('btn_aid_on'):
-            dev.log.warning('行会内没有支援')
-            exit()
-            return fail
-        # select_role(dev, 'iv_aid')
+            _sleep(is_open=True)
+            dev.click_byCv('btn_aid')
+            if not dev.cv_exists('btn_aid_on'):
+                dev.log.warning('行会内没有支援')
+                exit()
+                return fail
         select_combat_highest_role(dev)
-        if dev.cv_exists('iv_team_null'):
+        while dev.cv_exists('iv_team_null'):
             select_combat_highest_role(dev)
         dev.click_byCv('btn_battle_begins', 'btn_ok_blue', 'btn_menu_small', 'btn_give_up_white', 'btn_give_up_blue',
                        'btn_retreat', 'btn_ok_blue')  # 开始战斗后马上退出战斗，然后退出当前地下城
@@ -390,7 +404,7 @@ def join_guild_and_logout_batch(dev: Device, account_list: list, guild_name: str
 
 def create_guild(dev: Device, leader: list, guild_name: str):
     try:
-        if login(dev, leader):
+        if login(dev, leader) is fail:
             dev.log.warning('错误[000]登录失败，行会创建失败')
             exit()
             return fail
