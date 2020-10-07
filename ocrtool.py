@@ -1,6 +1,5 @@
 import os
 import random
-from json.decoder import JSONDecodeError
 from time import sleep
 from tkinter import messagebox
 import requests
@@ -59,7 +58,7 @@ class OcrTool:
         try:
             response = requests.post(request_url, data=params, headers=headers)
             response_json = response.json()
-        except JSONDecodeError as e:
+        except Exception as e:
             return self.word_exists(target_word, is_full_matching, is_accurate, re_screenshot)
 
         words_list = list()
@@ -96,7 +95,7 @@ class OcrTool:
         try:
             response = requests.post(request_url, data=params, headers=headers)
             response_json = response.json()
-        except JSONDecodeError as e:
+        except Exception as e:
             return self.word_exists(target_word, is_full_matching, is_accurate, re_screenshot)
 
         words_list = list()
